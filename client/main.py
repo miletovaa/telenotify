@@ -8,18 +8,13 @@ import os
 # File with an object of temporary modes. This we will fetch from the DB. Peer_ids are the only chats that will not be muted when the mode is enabled
 import modes 
 
-# Load environment variables from .env file
 load_dotenv()
 
-# Get API credentials from environment variables
 api_id = os.getenv('API_ID')
 api_hash = os.getenv('API_HASH')
-phone = os.getenv('PHONE')
 
 # Initialize the Telegram client
 client = TelegramClient('session_name', api_id, api_hash)
-
-print(modes.modes)
 
 async def get_user_by_peer_id(peer_id: int):
     async with client:
@@ -31,16 +26,16 @@ async def get_user_by_peer_id(peer_id: int):
             print(f"Error fetching user by peer ID: {e}")
             return None
         
-async def update_notification_settings(user_peer, mute_until):
-    async with client:
-        # Update the notification settings using UpdateNotifySettingsRequest
-        try:
-            notify_settings = InputPeerNotifySettings(mute_until=mute_until)
-            result = await client(UpdateNotifySettingsRequest(peer=user_peer, settings=notify_settings))
-            return result
-        except Exception as e:
-            print(f"Error updating notification settings: {e}")
-            return None
+# async def update_notification_settings(user_peer, mute_until):
+#     async with client:
+#         # Update the notification settings using UpdateNotifySettingsRequest
+#         try:
+#             notify_settings = InputPeerNotifySettings(mute_until=mute_until)
+#             result = await client(UpdateNotifySettingsRequest(peer=user_peer, settings=notify_settings))
+#             return result
+#         except Exception as e:
+#             print(f"Error updating notification settings: {e}")
+#             return None
         
 async def fetch_mode_chats(mode):
     # get chats from the DB based on the mode
@@ -71,6 +66,7 @@ async def enable_mode(mode):
 async def main():
     async with client as session:
         me = await session.get_me()
+        print(me)
         print(f"This is me: {me.first_name} {me.last_name if not 'None' else ''}")
 
         while True:
@@ -84,8 +80,10 @@ async def main():
 
             if choice == '/general':
                 enable_mode('general')
+                break
             elif choice == '/work':
                 enable_mode('work')
+                break
             elif choice == '/personal':
                 enable_mode('personal')
                 break
