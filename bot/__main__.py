@@ -4,7 +4,7 @@ import logging
 from aiogram import Dispatcher, Bot
 from aiogram.client.default import DefaultBotProperties
 
-from bot.handlers import start
+from bot.handlers import start, modes
 from bot.utils.set_bot_commands import set_bot_commands
 from bot.utils.setup_logging import setup_logging
 from config import settings
@@ -22,6 +22,7 @@ async def run_bot():
 
     # Register handlers
     dp.include_router(start.router)
+    dp.include_router(modes.router)
 
     # Set bot commands in UI
     await set_bot_commands(bot)
