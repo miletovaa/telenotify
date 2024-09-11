@@ -12,6 +12,7 @@ To be updated...
 - [ ] Return mode chat list
 - [ ] Return current mode
 
+- [ ] Personal mode creation
 - [ ] Make chat list filling more user friendly (not with peer id)
 - [ ] Integration with the telegram chatlist groups
 - [ ] Activate modes for the given time

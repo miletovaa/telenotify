@@ -1,24 +1,27 @@
+from db.controllers.mode import fetch_modes, is_mode_existent
+from db.controllers.mode_peer import fetch_chats_by_mode
+from db.controllers.exception import fetch_exception_chats
+
 from telethon import TelegramClient
 from telethon.tl.functions.account import GetNotifySettingsRequest, UpdateNotifySettingsRequest, GetNotifyExceptionsRequest
 from telethon.tl.types import InputPeerNotifySettings
+
 from dotenv import load_dotenv
 import asyncio
 import os
-
-# File with an object of temporary modes. This we will fetch from the DB. Peer_ids are the only chats that will not be muted when the mode is enabled
-import modes 
 
 load_dotenv()
 
 api_id = os.getenv('API_ID')
 api_hash = os.getenv('API_HASH')
 
+debug = os.getenv('DEBUG')
+
 # Initialize the Telegram client
 client = TelegramClient('session_name', api_id, api_hash)
 
 async def get_user_by_peer_id(peer_id: int):
     async with client:
-        # Try to fetch the user by their peer ID
         try:
             user = await client.get_entity(peer_id)
             return user
@@ -26,72 +29,74 @@ async def get_user_by_peer_id(peer_id: int):
             print(f"Error fetching user by peer ID: {e}")
             return None
         
-# async def update_notification_settings(user_peer, mute_until):
-#     async with client:
-#         # Update the notification settings using UpdateNotifySettingsRequest
-#         try:
-#             notify_settings = InputPeerNotifySettings(mute_until=mute_until)
-#             result = await client(UpdateNotifySettingsRequest(peer=user_peer, settings=notify_settings))
-#             return result
-#         except Exception as e:
-#             print(f"Error updating notification settings: {e}")
-#             return None
-        
-async def fetch_mode_chats(mode):
-    # get chats from the DB based on the mode
-    print(f"Fetching {mode} chats from the database")
+async def unmute_peer(peer):
+    async with client:
+        try:
+            notify_settings = InputPeerNotifySettings(mute_until=0)
+            result = await client(UpdateNotifySettingsRequest(peer=peer, settings=notify_settings))
+            return result
+        except Exception as e:
+            print(f"Error updating notification settings: {e}")
+            return None
 
-async def fetch_exception_chats(mode):
-    # get chats that are never muted from the DB
-    print("Fetching exception chats from the database")
-    return modes[mode] # temporary return
-        
 async def enable_mode(mode):
-    # get exceptions and merge them with modes[mode]
-    exceptions = await fetch_exception_chats()
-    mode = await fetch_mode_chats(mode)
-    mode_exceptions = mode + exceptions
-    # mute all chats
-    # set notification exceptions
+    # TODO: mute all chats
+    print("Enabling " + mode + " mode")
+
+    exceptions = await fetch_exception_chats(client_id)
+
+    by_mode = await fetch_chats_by_mode(client_id, mode)
+
+    to_unmute = by_mode + exceptions
+
+    for mode_peer in to_unmute:
+        peer = await get_user_by_peer_id(mode_peer.peer_id)
+        print(peer)
+        await unmute_peer(peer)
+        print(peer)
+        print(" is unmuted")
+
+async def get_menu_options():
+    available_modes = await fetch_modes(client_id)
+
+    commands = list(map(lambda x: x.name, available_modes))
+    commands.append('setexceptions')
+    return commands
+
+async def menu():
+    options = await get_menu_options()
+
+    while True:
+        print("\nCommand Menu")
+        for option in options:
+            print(f"/{option}")
+
+        command = input("Insert command: ")
+
+        if command == '/setexceptions':
+            print("Setting exceptions")
+        else:
+            does_mode_exist = await is_mode_existent(client_id, command[1:])
+
+            if does_mode_exist:
+                await enable_mode(command[1:])
+            else:
+                print("\nInvalid command, please try again.")
         
-# async def get_notify_exceptions():
-#     async with client:
-#         try:
-#             notify_settings = await client(GetNotifyExceptionsRequest())
-#             return notify_settings
-#         except Exception as e:
-#             print(f"Error fetching notification settings: {e}")
-#             return None
+        break
+
 
 async def main():
     async with client as session:
         me = await session.get_me()
-        print(me)
-        print(f"This is me: {me.first_name} {me.last_name if not 'None' else ''}")
+        global client_id
+        client_id = me.id
 
-        while True:
-            print("\nCommand Menu")
-            print("/general")
-            print("/work")
-            print("/personal")
-            print("/setexceptions")
+        await client.get_dialogs()
 
-            choice = input("Insert command: ")
-
-            if choice == '/general':
-                enable_mode('general')
-                break
-            elif choice == '/work':
-                enable_mode('work')
-                break
-            elif choice == '/personal':
-                enable_mode('personal')
-                break
-            else:
-                print("Invalid command, please try again.")
+        await menu()
 
         await client.disconnect()
 
-# Run the script
 if __name__ == '__main__':
     asyncio.run(main())
