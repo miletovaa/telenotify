@@ -1,16 +1,9 @@
-import os
-from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
-load_dotenv('.env')
+from config import settings
 
-dbname = os.getenv('DB_NAME')
-dbuser = os.getenv('DB_USER')
-dbpass = os.getenv('DB_PASSWORD')
-dbhost = os.getenv('DB_HOST')
-
-dbconnect = f"mysql+aiomysql://{dbuser}:{dbpass}@{dbhost}/{dbname}"
+dbconnect = f"mysql+aiomysql://{settings.db_user}:{settings.db_password}@{settings.db_host}/{settings.db_name}"
 engine = create_async_engine(dbconnect)
 
 AsyncSession = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)

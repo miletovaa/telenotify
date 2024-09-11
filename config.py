@@ -10,7 +10,9 @@ class Settings(BaseSettings):
     db_name: str
     db_user: str
     db_password: str
-    db_server: str
+    db_host: str
+
+    debug: bool = False
 
     class Config:
         env_file = ".env"

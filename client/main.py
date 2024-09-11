@@ -2,6 +2,7 @@ import os
 
 import asyncio
 
+from config import settings
 from db.controllers.mode import fetch_modes, is_mode_existent
 from db.controllers.mode_peer import fetch_chats_by_mode
 from db.controllers.exception import fetch_exception_chats
@@ -11,11 +12,10 @@ from tg_api.peer import get_peer_by_id, unmute_peer
 
 from debug import get_peer_title
 
-debug = os.getenv('DEBUG')
 
 async def enable_mode(mode):
     # TODO: mute all chats
-    if debug:
+    if settings.debug:
         print("Enabling " + mode + " mode")
 
     exceptions = await fetch_exception_chats(client_id)
@@ -28,8 +28,9 @@ async def enable_mode(mode):
         peer = await get_peer_by_id(mode_peer.peer_id)
         await unmute_peer(peer)
         
-        if debug:
+        if settings.debug:
             print(f"Unmuting {get_peer_title(peer)}")
+
 
 async def get_menu_options():
     available_modes = await fetch_modes(client_id)
@@ -37,6 +38,7 @@ async def get_menu_options():
     commands = list(map(lambda x: x.name, available_modes))
     commands.append('setexceptions')
     return commands
+
 
 async def menu():
     options = await get_menu_options()
@@ -60,13 +62,14 @@ async def menu():
         
         exit()
 
+
 async def main():
     async with client as session:
         me = await session.get_me()
         global client_id
         client_id = me.id
 
-        if debug:
+        if settings.debug:
             print(f"Logged with {get_peer_title(me)}")
 
         await client.get_dialogs()
